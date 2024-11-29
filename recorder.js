@@ -70,6 +70,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const fileName = generateFileName();
         
         try {
+            console.log('Starting S3 upload with params:', {
+                Bucket: BUCKET_NAME,
+                Key: fileName,
+                ContentType: 'audio/wav'
+            });
+
             const params = {
                 Bucket: BUCKET_NAME,
                 Key: fileName,
@@ -82,16 +88,24 @@ document.addEventListener('DOMContentLoaded', () => {
             // Add upload progress indicator
             upload.on('httpUploadProgress', (progress) => {
                 const percentCompleted = Math.round((progress.loaded * 100) / progress.total);
+                console.log('Upload progress:', percentCompleted + '%');
                 recordingStatus.textContent = `Uploading: ${percentCompleted}%`;
             });
 
+            console.log('Awaiting upload completion...');
             const result = await upload.promise();
+            console.log('Upload successful:', result);
             recordingStatus.textContent = 'Upload complete!';
-            console.log('Successfully uploaded:', result.Location);
             return result.Location;
         } catch (error) {
-            console.error('Error uploading to S3:', error);
-            recordingStatus.textContent = 'Error uploading recording';
+            console.error('Detailed upload error:', {
+                message: error.message,
+                code: error.code,
+                statusCode: error.statusCode,
+                requestId: error.requestId,
+                stack: error.stack
+            });
+            recordingStatus.textContent = `Error uploading: ${error.message}`;
             throw error;
         }
     }
