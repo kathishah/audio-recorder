@@ -1,3 +1,5 @@
+import awsConfig from './config.js';
+
 document.addEventListener('DOMContentLoaded', () => {
     const microphoneInfo = document.getElementById('microphoneInfo');
     const speakerInfo = document.getElementById('speakerInfo');
@@ -6,6 +8,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const playButton = document.getElementById('playButton');
     const recordingStatus = document.getElementById('recordingStatus');
     const audioPlayback = document.getElementById('audioPlayback');
+
+    // AWS Configuration
+    AWS.config.update({
+        region: awsConfig.region,
+        credentials: new AWS.CognitoIdentityCredentials({
+            IdentityPoolId: awsConfig.identityPoolId
+        })
+    });
+
+    const s3 = new AWS.S3();
+    const BUCKET_NAME = awsConfig.bucketName;
 
     let mediaRecorder;
     let audioChunks = [];
@@ -37,6 +50,47 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Function to generate timestamped filename
+    function generateFileName() {
+        const now = new Date();
+        const timestamp = now.toISOString()
+            .replace(/[:.]/g, '-') // Replace colons and periods with hyphens
+            .replace('T', '_') // Replace T with underscore
+            .replace('Z', ''); // Remove Z
+        return `recording_${timestamp}.wav`;
+    }
+
+    // Function to upload to S3
+    async function uploadToS3(audioBlob) {
+        const fileName = generateFileName();
+        
+        try {
+            const params = {
+                Bucket: BUCKET_NAME,
+                Key: fileName,
+                Body: audioBlob,
+                ContentType: 'audio/wav'
+            };
+
+            const upload = s3.upload(params);
+            
+            // Add upload progress indicator
+            upload.on('httpUploadProgress', (progress) => {
+                const percentCompleted = Math.round((progress.loaded * 100) / progress.total);
+                recordingStatus.textContent = `Uploading: ${percentCompleted}%`;
+            });
+
+            const result = await upload.promise();
+            recordingStatus.textContent = 'Upload complete!';
+            console.log('Successfully uploaded:', result.Location);
+            return result.Location;
+        } catch (error) {
+            console.error('Error uploading to S3:', error);
+            recordingStatus.textContent = 'Error uploading recording';
+            throw error;
+        }
+    }
+
     // Request microphone permissions on page load
     async function initialize() {
         try {
@@ -56,15 +110,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 audioChunks.push(event.data);
             };
 
-            mediaRecorder.onstop = () => {
+            mediaRecorder.onstop = async () => {
                 const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
                 audioPlayback.src = URL.createObjectURL(audioBlob);
                 audioPlayback.style.display = 'block';
                 playButton.disabled = false;
                 recordButton.innerHTML = '<i class="fas fa-microphone"></i>';
                 recordButton.classList.remove('recording');
-                recordingStatus.textContent = 'Recording stopped';
-                recordingStatus.classList.remove('recording');
+                recordingStatus.textContent = 'Processing recording...';
+                
+                try {
+                    const uploadUrl = await uploadToS3(audioBlob);
+                    recordingStatus.textContent = 'Recording saved and uploaded!';
+                } catch (error) {
+                    recordingStatus.textContent = 'Error saving recording';
+                    console.error('Upload failed:', error);
+                }
             };
 
         } catch (error) {
