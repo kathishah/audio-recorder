@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Audio Recorder</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1.12.min.js"></script>
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1484.0.min.js"></script>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
@@ -116,11 +116,22 @@
             margin: 0;
             padding: 10px;
         }
+        .version-info {
+            font-size: 0.8em;
+            color: #666;
+            text-align: right;
+            margin-bottom: 20px;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Audio Recorder</h1>
+        
+        <div class="version-info">
+            Version: v1.0.20231128.2047 | Last updated: Nov 28, 2023 8:47 PM PST
+        </div>
         
         <div class="device-info">
             <div>
@@ -163,7 +174,6 @@
         <audio id="audioPlayback" controls style="display: none;"></audio>
     </div>
 
-    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1.12.min.js"></script>
     <script src="recorder.js"></script>
 </body>
 </html>

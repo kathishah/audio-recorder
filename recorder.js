@@ -83,17 +83,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 ContentType: 'audio/wav'
             };
 
-            const upload = s3.upload(params);
-            
-            // Add upload progress indicator
-            upload.on('httpUploadProgress', (progress) => {
-                const percentCompleted = Math.round((progress.loaded * 100) / progress.total);
-                console.log('Upload progress:', percentCompleted + '%');
-                recordingStatus.textContent = `Uploading: ${percentCompleted}%`;
+            // Create a new promise for the upload
+            const uploadPromise = new Promise((resolve, reject) => {
+                s3.upload(params, (err, data) => {
+                    if (err) {
+                        console.error('Upload error:', err);
+                        reject(err);
+                    } else {
+                        console.log('Upload success:', data);
+                        resolve(data);
+                    }
+                }).on('httpUploadProgress', (progress) => {
+                    const percentCompleted = Math.round((progress.loaded * 100) / progress.total);
+                    console.log('Upload progress:', percentCompleted + '%');
+                    recordingStatus.textContent = `Uploading: ${percentCompleted}%`;
+                });
             });
 
             console.log('Awaiting upload completion...');
-            const result = await upload.promise();
+            const result = await uploadPromise;
             console.log('Upload successful:', result);
             recordingStatus.textContent = 'Upload complete!';
             return result.Location;
