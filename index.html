@@ -43,6 +43,14 @@
             background: #e5ffe5;
             color: #27ae60;
         }
+        .status-message {
+            margin: 20px 0;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+            color: #333;
+        }
         button {
             background: #3498db;
             color: white;
@@ -123,6 +131,25 @@
             margin-bottom: 20px;
             font-style: italic;
         }
+        .api-result {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f0f7ff;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+        progress[value]::-webkit-progress-bar {
+            background-color: #f3f3f3;
+            border-radius: 4px;
+        }
+
+        progress[value]::-webkit-progress-value {
+            transition: width 0.2s ease;
+        }
+
+        .progress-error::-webkit-progress-value {
+            background-color: red;
+        }
     </style>
 </head>
 <body>
@@ -169,9 +196,22 @@
             </button>
         </div>
 
-        <div id="recordingStatus"></div>
-        
         <audio id="audioPlayback" controls style="display: none;"></audio>
+        
+        <div id="uploadProgressContainer">
+            <label for="uploadProgress">Upload Progress:</label>
+            <progress id="uploadProgress" value="0" max="100"></progress>
+        </div>
+
+        <div id="analysisProgressContainer">
+            <label for="analysisProgress">Analysis Progress:</label>
+            <progress id="analysisProgress" value="0" max="100"></progress>
+        </div>
+
+        <div id="apiResult" class="api-result">
+            <!-- API analysis results will be displayed here -->
+        </div>
+
     </div>
 
     <script src="recorder.js"></script>
