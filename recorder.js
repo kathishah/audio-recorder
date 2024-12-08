@@ -74,6 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const params = {
             Bucket: BUCKET_NAME,
             Key: fileName,
+            Body: audioBlob, // Ensure audioBlob is set as the Body
             ContentType: 'audio/wav'
         };
 
