@@ -54,8 +54,8 @@ header {
   font-size: 1.2rem;
   font-weight: 600;
   padding: 15px 30px;
-  width: 200px; /* More flexible width */
-  height: 200px; /* More flexible height */
+  width: 60px; /* More flexible width */
+  height: 60px; /* More flexible height */
   border: none;
   border-radius: 50%;
   cursor: pointer;
@@ -143,6 +143,58 @@ header {
   animation: none;
 }
 
+/* Toast notification styles */
+#toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 15px 20px;
+  border-radius: 8px;
+  z-index: 1100;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+  max-width: 90%;
+  text-align: center;
+  font-weight: 500;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+  transform: translateX(-50%) translateY(-20px);
+  font-size: 0.5em; /* Match version-info font size */
+}
+
+#toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Light mode styles */
+#toast.success {
+  background-color: #4CAF50; /* Accessible green */
+  color: white;
+  border: 2px solid #388E3C;
+}
+
+#toast.error {
+  background-color: #FF5722; /* Accessible orange-red */
+  color: white;
+  border: 2px solid #D32F2F;
+}
+
+/* Dark mode styles */
+@media (prefers-color-scheme: dark) {
+  #toast.success {
+    background-color: #81C784; /* Lighter green for dark mode */
+    color: black;
+    border: 2px solid #388E3C;
+  }
+
+  #toast.error {
+    background-color: #FF8A65; /* Softer red for dark mode */
+    color: black;
+    border: 2px solid #D32F2F;
+  }
+}
+
 /* Mobile-specific media queries */
 @media screen and (max-width: 600px) {
   body {
@@ -158,8 +210,8 @@ header {
   }
 
   #startButton {
-    width: 150px;
-    height: 150px;
+    width: 60px;
+    height: 60px;
     font-size: 1rem;
     padding: 10px 20px;
   }

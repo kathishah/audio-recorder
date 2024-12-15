@@ -12,6 +12,72 @@ let dataArray;
 let animationId;
 let isRecording = false;
 
+// Toast notification function
+function showToast(message, type = 'error', duration = 5000) {
+  // Create toast element if it doesn't exist
+  let toast = document.getElementById('toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'toast';
+    document.body.appendChild(toast);
+  }
+
+  // Reset previous classes
+  toast.classList.remove('success', 'error', 'show');
+
+  // Set message and show toast
+  toast.textContent = message;
+  toast.classList.add(type, 'show');
+
+  // Remove toast after specified duration
+  setTimeout(() => {
+    toast.classList.remove('show');
+  }, duration);
+}
+
+// Function to check device permissions
+async function checkDevicePermissions() {
+  try {
+    // Get microphone access
+    const microphoneStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    
+    // Enumerate devices to get device names
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    
+    // Find microphone and speaker devices
+    const microphoneDevice = devices.find(device => 
+      device.kind === 'audioinput' && device.deviceId === microphoneStream.getAudioTracks()[0].getSettings().deviceId
+    );
+
+    const speakerDevice = devices.find(device => device.kind === 'audiooutput');
+
+    // Close the temporary stream
+    microphoneStream.getTracks().forEach(track => track.stop());
+
+    // Prepare device names for toast message
+    const microphoneName = microphoneDevice ? microphoneDevice.label : 'Default Microphone';
+    const speakerName = speakerDevice ? speakerDevice.label : 'Default Speaker';
+
+    // Show success toast with device names
+    showToast(`🎤:${microphoneName} 🔈:${speakerName}`, 'success');
+
+    return true;
+  } catch (err) {
+    console.error('Device permission error:', err);
+    
+    // Provide user-friendly error messages via toast
+    if (err.name === 'NotAllowedError') {
+      showToast('Please grant microphone and speaker permissions to use this recorder.', 'error');
+    } else if (err.message.includes('Speaker access not available')) {
+      showToast('Speaker access is required. Please check your device settings.', 'error');
+    } else {
+      showToast('Unable to access recording devices. Please check your permissions.', 'error');
+    }
+
+    return false;
+  }
+}
+
 // Countdown function
 function startCountdown() {
   return new Promise((resolve) => {
@@ -57,6 +123,12 @@ function stopRecording() {
 }
 
 startButton.addEventListener('click', async () => {
+  // Check device permissions first
+  const hasPermissions = await checkDevicePermissions();
+  if (!hasPermissions) {
+    return;
+  }
+
   if (isRecording) {
     // If already recording, stop recording
     stopRecording();
