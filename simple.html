@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CrispVoice</title>
+  <link href="simple.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <header>
+    <div class="logo">
+      <h1>CrispVoice</h1>
+      <p class="tagline">Your Voice, Crisp or not?</p>
+      <p class="subtext">Analyze your microphone’s quality for calls and video meetings.</p>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <button id="startButton">
+        🎤
+      </button>
+      <div id="recordingSection" style="display: none;">
+        <p id="scriptToRead">Say this: "The quick brown fox jumps over the lazy dog."</p>
+        <canvas id="waveform"></canvas>
+      </div>
+    </section>
+  </main>
+
+  <div class="version-info">
+    Version: v1.0.20241208.1500 | Last updated: Dec 8, 2024 3:00 PM
+  </div>
+
+  <script src="simple.js"></script>
+</body>
+</html>
+

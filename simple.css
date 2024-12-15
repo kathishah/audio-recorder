@@ -1,0 +1,191 @@
+body {
+  font-family: 'Poppins', sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f4f4f4;
+  color: #333;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 20px;
+  max-width: 100%;
+  width: 100%;
+}
+
+.logo h1 {
+  font-size: 2rem;
+  margin: 0;
+}
+
+.tagline {
+  font-size: 1.2rem;
+  font-weight: 400;
+  color: #555;
+}
+
+.subtext {
+  font-size: 0.9rem;
+  color: #777;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 80%;
+  display: block;
+  text-align: center;
+  padding: 0 20px;
+  margin: 0 auto;
+}
+
+.hero {
+  text-align: center;
+  width: 100%;
+}
+
+#startButton {
+  background-color: #0078d7;
+  color: white;
+  font-size: 1.2rem;
+  font-weight: 600;
+  padding: 15px 30px;
+  width: 200px; /* More flexible width */
+  height: 200px; /* More flexible height */
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  max-width: 90%; /* Ensure it fits on smaller screens */
+  margin: 0 auto;
+}
+
+#recordingSection {
+  margin-top: 20px;
+  text-align: center;
+  width: 100%;
+  max-width: 100%;
+}
+
+#scriptToRead {
+  font-size: 1rem;
+  color: #444;
+  margin-bottom: 20px;
+  max-width: 100%;
+  word-wrap: break-word;
+}
+
+#waveform {
+  width: 100%;
+  max-width: 300px;
+  height: 100px;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  margin: 0 auto;
+}
+
+.version-info {
+  position: fixed;
+  bottom: 10px;
+  left: 0;
+  width: 100%;
+  font-size: 0.5em;
+  color: #666;
+  text-align: center;
+  margin-bottom: 0;
+  font-style: italic;
+  z-index: 1000;
+}
+
+/* Countdown pulse animation */
+@keyframes pulse-countdown {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(0, 120, 215, 0.7);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 20px rgba(0, 120, 215, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(0, 120, 215, 0);
+  }
+}
+
+#startButton.countdown {
+  animation: pulse-countdown 1s ease-out infinite;
+  background-color: #0078d7;
+}
+
+#startButton.countdown-3 {
+  background-color: #4a90e2; /* Lighter blue */
+}
+
+#startButton.countdown-2 {
+  background-color: #7ec0f3; /* Even lighter blue */
+}
+
+#startButton.countdown-1 {
+  background-color: #ff4d4d; /* Transitioning to red */
+}
+
+#startButton.recording {
+  background-color: #ff4757;
+  animation: none;
+}
+
+/* Mobile-specific media queries */
+@media screen and (max-width: 600px) {
+  body {
+    padding: 10px;
+  }
+
+  .logo h1 {
+    font-size: 1.5rem;
+  }
+
+  .tagline {
+    font-size: 1rem;
+  }
+
+  #startButton {
+    width: 150px;
+    height: 150px;
+    font-size: 1rem;
+    padding: 10px 20px;
+  }
+
+  #waveform {
+    max-width: 250px;
+  }
+}
+
+@media screen and (max-width: 375px) {
+  .logo h1 {
+    font-size: 1.2rem;
+  }
+
+  .tagline {
+    font-size: 0.9rem;
+  }
+
+  #startButton {
+    width: 120px;
+    height: 120px;
+    font-size: 0.9rem;
+    padding: 8px 15px;
+  }
+
+  #waveform {
+    max-width: 200px;
+  }
+}
