@@ -187,6 +187,7 @@ async function uploadToS3(audioBlob, fileName) {
     s3.upload(params, (err, data) => {
         if (err) {
             console.error('Upload error:', err);
+            showToast('Upload: ' + err.message, 'error');
             reject(err);
         } else {
             console.log('Upload success:', data);
@@ -235,6 +236,7 @@ async function sendForAnalysis(audioBlob, fileName) {
   } catch (error) {
       clearInterval(intervalId); // Ensure interval is cleared on error
       console.error('sendForAnalysis(): Error analyzing audio:', error);
+      showToast('Analysis: ' + error.message, 'error');
       setProgress('analysisProgressCircleFill', 100, true);
   }
 }
