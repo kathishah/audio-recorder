@@ -183,23 +183,20 @@ async function uploadToS3(audioBlob, fileName) {
   };
 
   return new Promise((resolve, reject) => {
-      uploadProgress.value = 0; // Reset progress
-      s3.upload(params, (err, data) => {
-          if (err) {
-              console.error('Upload error:', err);
-              uploadProgress.value = 0; // Set progress to 0
-              uploadProgressContainer.innerHTML = `<label for="uploadProgress">Upload Progress:</label> 🔴`;
-              reject(err);
-          } else {
-              console.log('Upload success:', data);
-              uploadProgressContainer.innerHTML = `<label for="uploadProgress">Upload Progress:</label> 🟢`;
-              resolve(data);
-          }
-      }).on('httpUploadProgress', (progress) => {
-          const percentCompleted = Math.round((progress.loaded * 100) / progress.total);
-          console.log('Upload progress:', percentCompleted + '%');
-          uploadProgress.value = percentCompleted;
-      });
+    setProgress('uploadProgressCircleFill', 0);
+    s3.upload(params, (err, data) => {
+        if (err) {
+            console.error('Upload error:', err);
+            reject(err);
+        } else {
+            console.log('Upload success:', data);
+            resolve(data);
+        }
+    }).on('httpUploadProgress', (progress) => {
+        const percentCompleted = Math.round((progress.loaded * 100) / progress.total);
+        console.log('Upload progress:', percentCompleted + '%');
+        setProgress('uploadProgressCircleFill', percentCompleted);
+    });
   });
 }
 
@@ -212,6 +209,8 @@ async function sendForAnalysis(audioBlob, fileName) {
   formData.append('file', audioBlob, fileName);
 
   let progress = 5; // Initial progress value
+  setProgress('analysisProgressCircleFill', progress);
+
   let intervalId;
 
   try {
@@ -244,14 +243,13 @@ async function sendForAnalysis(audioBlob, fileName) {
 async function processAudio(audioBlob) {
   const fileName = generateFileName();
 
-  // try {
-  //     const s3Result = await uploadToS3(audioBlob, fileName);
-  //     console.log('Upload successful:', s3Result);
-  // } catch (uploadError) {
-  //     uploadProgress.value = 0; // Set progress to 0
-  //     uploadProgressContainer.innerHTML = `<label for="uploadProgress">Upload Progress:</label> 🔴`;
-  //     console.error('Error uploading to S3:', uploadError);
-  // }
+  try {
+      const s3Result = await uploadToS3(audioBlob, fileName);
+      console.log('Upload successful:', s3Result);
+  } catch (uploadError) {
+      setProgress('uploadProgressCircleFill', 100, true);
+      console.error('Error uploading to S3:', uploadError);
+  }
 
   try {
       apiResultElement.textContent = '';
