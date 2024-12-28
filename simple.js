@@ -5,7 +5,8 @@ const recordingSection = document.getElementById('recordingSection');
 const waveform = document.getElementById('waveform');
 const canvasContext = waveform.getContext('2d');
 const apiResultElement = document.getElementById('apiResult');
-const analysisProgressContainer = document.getElementById('analysisProgressContainer'); 
+const audioPlayback = document.getElementById('audioPlayback');
+const playButton = document.getElementById('playButton');
 
 const awsConfig = {
   region: 'us-west-1',
@@ -31,6 +32,8 @@ let recordedChunks = [];
 let dataArray;
 let animationId;
 let isRecording = false;
+let isPlaying = false;
+
 
 // Toast notification function
 function showToast(message, type = 'error', duration = 5000) {
@@ -273,6 +276,34 @@ async function processAudio(audioBlob) {
   }
 }
 
+// Event listener for play button
+playButton.addEventListener('click', () => {
+  if (!isPlaying) {
+      audioPlayback.play();
+      isPlaying = true;
+      playButton.innerHTML = '<i class="fas fa-pause"></i>';
+      playButton.classList.add('playing');
+  } else {
+      audioPlayback.pause();
+      isPlaying = false;
+      playButton.innerHTML = '<i class="fas fa-play"></i>';
+      playButton.classList.remove('playing');
+  }
+});
+
+// Add event listeners for audio playback
+audioPlayback.addEventListener('ended', () => {
+    isPlaying = false;
+    playButton.innerHTML = '<i class="fas fa-play"></i>';
+    playButton.classList.remove('playing');
+});
+
+audioPlayback.addEventListener('pause', () => {
+    isPlaying = false;
+    playButton.innerHTML = '<i class="fas fa-play"></i>';
+    playButton.classList.remove('playing');
+});
+
 startButton.addEventListener('click', async () => {
   // Check device permissions first
   const hasPermissions = await checkDevicePermissions();
@@ -320,11 +351,12 @@ startButton.addEventListener('click', async () => {
 
   mediaRecorder.onstop = async () => {
     const blob = new Blob(recordedChunks, { type: 'audio/webm' });
-    const url = URL.createObjectURL(blob);
+    const audioBlobUrl = URL.createObjectURL(blob);
+    audioPlayback.src = audioBlobUrl;
     
     // Optional: You can add code here to handle the recorded audio
     // For example, create a download link or play the recording
-    console.log('Recording stopped. Blob URL:', url);
+    console.log('Recording stopped. Blob URL:', audioBlobUrl);
     await processAudio(blob);
   };
 

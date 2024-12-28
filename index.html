@@ -6,6 +6,7 @@
   <title>CrispVoice</title>
   <link href="simple.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 </head>
 <body>
   <header>
@@ -49,6 +50,11 @@
       <div id="apiResult" class="api-result">
         <!-- API analysis results will be displayed here -->
       </div>
+      <button id="playButton" class="play-button" title="Play Recording">
+        <i class="fas fa-play"></i>
+      </button>
+      <audio id="audioPlayback" controls style="display: none;"></audio>
+
   </section>
   </main>
 
