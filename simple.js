@@ -228,6 +228,11 @@ async function sendForAnalysis(audioBlob, fileName) {
           body: formData,
       });
 
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error('API response: ' + response.status + ' | ' + error.detail);
+      }
+
       clearInterval(intervalId); // Stop updating progress
       progress = 100; // Set to 100% once complete
       setProgress('analysisProgressCircleFill', progress);
@@ -235,8 +240,8 @@ async function sendForAnalysis(audioBlob, fileName) {
       return response.json();
   } catch (error) {
       clearInterval(intervalId); // Ensure interval is cleared on error
-      console.error('sendForAnalysis(): Error analyzing audio:', error);
-      showToast('Analysis: ' + error.message, 'error');
+      console.error('sendForAnalysis():', error);
+      showToast(error.message, 'error');
       setProgress('analysisProgressCircleFill', 100, true);
   }
 }
@@ -245,12 +250,14 @@ async function sendForAnalysis(audioBlob, fileName) {
 async function processAudio(audioBlob) {
   const fileName = generateFileName();
 
-  try {
-      const s3Result = await uploadToS3(audioBlob, fileName);
-      console.log('Upload successful:', s3Result);
-  } catch (uploadError) {
-      setProgress('uploadProgressCircleFill', 100, true);
-      console.error('Error uploading to S3:', uploadError);
+  if (window.location.hostname !== 'localhost') { // Only upload to S3 in production
+    try {
+        const s3Result = await uploadToS3(audioBlob, fileName);
+        console.log('Upload successful:', s3Result);
+    } catch (uploadError) {
+        setProgress('uploadProgressCircleFill', 100, true);
+        console.error('Error uploading to S3:', uploadError);
+    }
   }
 
   try {
