@@ -139,7 +139,8 @@ function stopRecording() {
   // Reset button and recording state
   startButton.classList.remove('recording');
   isRecording = false;
-  recordingSection.style.display = 'none';
+  recordingSection.style.display = 'none';  
+  progressSection.style.visibility  = 'visible';
 }
 
 function setProgress(circleId, value, isError = false) {
@@ -436,5 +437,5 @@ function displaySentenceWithScrolling(sentence) {
       }
   }, 2600); // Adjust the delay (in ms) for readability between batches}
 
-  //TODO raise a toast to prompt to stop recording
+  showToast("Click (🎤) to stop recording", "success");
 }
