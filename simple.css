@@ -207,6 +207,8 @@ progress[value]::-webkit-progress-value {
   display: flex;
   gap: 20px;
   align-items: center;
+  max-width: 100%;
+  justify-content: center;
 }
 
 .progress-container {
@@ -235,6 +237,25 @@ svg {
   transition: stroke-dashoffset 0.4s ease, stroke 0.4s ease;
 }
 
+#resultsSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 100%; /* or whatever maximum width you prefer */
+  margin: 0 auto;
+  padding: 10px;
+  font-size: 0.8rem;
+  font-weight: 400;
+  box-sizing: border-box;
+  justify-content: center;
+}
+
+/* Make sure the content inside doesn't overflow */
+#resultsSection > * {
+  width: 100%;
+  max-width: 100%;
+}
 
 /* Dark mode styles */
 @media (prefers-color-scheme: dark) {

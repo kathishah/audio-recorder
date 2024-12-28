@@ -258,7 +258,8 @@ async function processAudio(audioBlob) {
       const apiResult = await sendForAnalysis(audioBlob, fileName);
       console.log('API Analysis Result:', apiResult);
       const { pesq_score, snr_db, sample_rate, quality_category } = apiResult;
-      apiResultElement.textContent = `PESQ Score: ${pesq_score}, SNR: ${snr_db} dB, Sample Rate: ${sample_rate} Hz, Quality: ${quality_category}`;
+      apiResultElement.textContent = `${quality_category} @ pesq: ${pesq_score}, snr: ${snr_db} dB`;
+      resultsSection.style.visibility = 'visible';
   } catch (analysisError) {
       console.error('Error analyzing audio:', analysisError);
       setProgress('analysisProgressCircleFill', 100, true);
