@@ -33,7 +33,33 @@ let dataArray;
 let animationId;
 let isRecording = false;
 let isPlaying = false;
+let supportedMimeType = null;
 
+const audioMimeTypes = [
+  'audio/webm',
+  'audio/mp4',
+];
+
+const checkMimeTypes = () => {
+  console.log('Checking audio MIME type support...');
+  let output = '';
+  audioMimeTypes.forEach(mimeType => {
+      const isSupported = MediaRecorder.isTypeSupported(mimeType);
+      output += `${mimeType}: ${isSupported ? 'Supported' : 'Not Supported'}\n`;
+      if (isSupported) {
+        supportedMimeType = mimeType;
+      }
+  });
+  console.log(output);
+  if (supportedMimeType) {  
+    showToast(`Supported MIME type: ${supportedMimeType}`, 'success');
+  } else {
+    showToast('No supported MIME type found', 'error');
+  }
+};
+
+// Call the function to check support
+checkMimeTypes();
 
 // Toast notification function
 function showToast(message, type = 'error', duration = 5000) {
@@ -209,6 +235,8 @@ async function sendForAnalysis(audioBlob, fileName) {
   const apiBaseUrl = window.location.hostname === 'localhost' ? 'http://localhost:8000' : 'https://audio-analyzer-api-af6843ebf910.herokuapp.com';
   const apiUrl = `${apiBaseUrl}/api/v1/analyze`;
 
+  console.log(`Blob MIME type: ${audioBlob.type}`);
+
   const formData = new FormData();
   formData.append('file', audioBlob, fileName);
 
@@ -246,6 +274,7 @@ async function sendForAnalysis(audioBlob, fileName) {
       console.error('sendForAnalysis():', error);
       showToast(error.message, 'error');
       setProgress('analysisProgressCircleFill', 100, true);
+      throw error;
   }
 }
 
@@ -332,15 +361,11 @@ startButton.addEventListener('click', async () => {
   // Show the recording section
   recordingSection.style.display = 'block';
 
-  // Initialize audio recording
-  audioContext = new (window.AudioContext || window.webkitAudioContext)();
-  analyser = audioContext.createAnalyser();
-
   // Get microphone access
   const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
   
   // Setup media recorder
-  mediaRecorder = new MediaRecorder(stream);
+  mediaRecorder = new MediaRecorder(stream, { mimeType: supportedMimeType });
   recordedChunks = [];
 
   mediaRecorder.ondataavailable = (event) => {
@@ -350,13 +375,10 @@ startButton.addEventListener('click', async () => {
   };
 
   mediaRecorder.onstop = async () => {
-    const blob = new Blob(recordedChunks, { type: 'audio/webm' });
+    const blob = new Blob(recordedChunks, { type: supportedMimeType });
     const audioBlobUrl = URL.createObjectURL(blob);
-    audioPlayback.src = audioBlobUrl;
-    
-    // Optional: You can add code here to handle the recorded audio
-    // For example, create a download link or play the recording
     console.log('Recording stopped. Blob URL:', audioBlobUrl);
+    audioPlayback.src = audioBlobUrl;
     await processAudio(blob);
   };
 
@@ -364,6 +386,9 @@ startButton.addEventListener('click', async () => {
   mediaRecorder.start();
   isRecording = true;
 
+  // Initialize audio context and analyser
+  audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  analyser = audioContext.createAnalyser();
   microphone = audioContext.createMediaStreamSource(stream);
   microphone.connect(analyser);
 
