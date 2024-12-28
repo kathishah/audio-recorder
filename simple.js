@@ -407,36 +407,27 @@ function loadRandomSentence() {
 function displaySentenceWithScrolling(sentence) {
   const displayArea = document.getElementById('displayArea');
   const words = sentence.split(' ');
-  let currentIndex = 5; // Start after the first 5 words
+  const firstFiveWords = words.slice(0, 5).join(' ');
+  const remainingSentence = sentence.slice(firstFiveWords.length).trim();
 
-  // Clear the display area
-  displayArea.value = '';
+  // Set the display area with the first 5 words
+  displayArea.value = firstFiveWords + ' ';
+  let currentIndex = 0;
 
-  // Preload the first 5 words
-  const firstBatch = words.slice(0, 5).join(' ');
-  displayArea.value = firstBatch;
+  // Function to simulate typing for the remaining characters
+  const typingInterval = setInterval(() => {
+      if (currentIndex < remainingSentence.length) {
+          // Add the next character from the remaining sentence
+          displayArea.value += remainingSentence[currentIndex];
+          currentIndex++;
 
-  // Auto-scroll to the top (in case of residual scroll)
-  displayArea.scrollTop = displayArea.scrollHeight;
-
-  // Function to update the text area with words gradually
-  const interval = setInterval(() => {
-      if (currentIndex < words.length) {
-          // Get the next batch of up to 5 words
-          const nextBatch = words.slice(currentIndex, currentIndex + 5).join(' ');
-          
-          // Append the batch to the display area
-          displayArea.value += ' ' + nextBatch;
-
-          // Auto-scroll to show the latest lines
+          // Auto-scroll to the bottom
           displayArea.scrollTop = displayArea.scrollHeight;
-
-          // Move to the next batch
-          currentIndex += 5;
       } else {
-          clearInterval(interval); // Stop the interval when all words are displayed
+          clearInterval(typingInterval); // Stop typing when the sentence is complete
       }
-  }, 2600); // Adjust the delay (in ms) for readability between batches}
+  }, 100); // Adjust typing speed (in ms) as needed
 
   showToast("Click (🎤) to stop recording", "success");
 }
+
