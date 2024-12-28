@@ -1,7 +1,29 @@
+import 'https://cdnjs.cloudflare.com/ajax/libs/aws-sdk/2.1484.0/aws-sdk.min.js';
+// import AWS from 'https://sdk.amazonaws.com/js/aws-sdk-2.1484.0.min.js';
+
 const startButton = document.getElementById('startButton');
 const recordingSection = document.getElementById('recordingSection');
 const waveform = document.getElementById('waveform');
 const canvasContext = waveform.getContext('2d');
+const apiResultElement = document.getElementById('apiResult');
+const analysisProgressContainer = document.getElementById('analysisProgressContainer'); 
+const analysisProgress = document.getElementById('analysisProgress');
+
+const awsConfig = {
+  region: 'us-west-1',
+  identityPoolId: 'us-west-1:b15a5865-d7e7-4153-9456-7d271afd31d6',
+  bucketName: 'crispvoice-audio-recordings'
+};
+
+AWS.config.update({
+  region: awsConfig.region,
+  credentials: new AWS.CognitoIdentityCredentials({
+      IdentityPoolId: awsConfig.identityPoolId
+  })
+});
+
+const s3 = new AWS.S3();
+const BUCKET_NAME = awsConfig.bucketName;
 
 let audioContext;
 let analyser;
@@ -122,6 +144,114 @@ function stopRecording() {
   recordingSection.style.display = 'none';
 }
 
+function generateFileName() {
+  const now = new Date();
+  const timestamp = now.toISOString()
+      .replace(/[:.]/g, '-') // Replace colons and periods with hyphens
+      .replace('T', '_') // Replace T with underscore
+      .replace('Z', ''); // Remove Z
+  return `recording_${timestamp}.wav`;
+}
+
+// Function to upload audio to S3
+async function uploadToS3(audioBlob, fileName) {
+  const params = {
+      Bucket: BUCKET_NAME,
+      Key: fileName,
+      Body: audioBlob, // Ensure audioBlob is set as the Body
+      ContentType: 'audio/wav'
+  };
+
+  return new Promise((resolve, reject) => {
+      uploadProgress.value = 0; // Reset progress
+      s3.upload(params, (err, data) => {
+          if (err) {
+              console.error('Upload error:', err);
+              uploadProgress.value = 0; // Set progress to 0
+              uploadProgressContainer.innerHTML = `<label for="uploadProgress">Upload Progress:</label> 🔴`;
+              reject(err);
+          } else {
+              console.log('Upload success:', data);
+              uploadProgressContainer.innerHTML = `<label for="uploadProgress">Upload Progress:</label> 🟢`;
+              resolve(data);
+          }
+      }).on('httpUploadProgress', (progress) => {
+          const percentCompleted = Math.round((progress.loaded * 100) / progress.total);
+          console.log('Upload progress:', percentCompleted + '%');
+          uploadProgress.value = percentCompleted;
+      });
+  });
+}
+
+// Function to send audio for analysis
+async function sendForAnalysis(audioBlob, fileName) {
+  const apiBaseUrl = window.location.hostname === 'localhost' ? 'http://localhost:8000' : 'https://audio-analyzer-api-af6843ebf910.herokuapp.com';
+  const apiUrl = `${apiBaseUrl}/api/v1/analyze`;
+
+  const formData = new FormData();
+  formData.append('file', audioBlob, fileName);
+
+  analysisProgress.value = 0; // Reset progress
+
+  let progress = 5; // Initial progress value
+  let intervalId;
+
+  try {
+      // Start progress updater
+      intervalId = setInterval(() => {
+          if (progress < 90) { // Increment progress up to 90%
+              progress += 10;
+              analysisProgress.value = progress;
+          }
+      }, 50);
+
+      const response = await fetch(apiUrl, {
+          method: 'POST',
+          body: formData,
+      });
+
+      clearInterval(intervalId); // Stop updating progress
+      analysisProgress.value = 100; // Set to 100% once complete
+
+      // Replace progress bar with a green checkmark
+      analysisProgressContainer.innerHTML = `<label for="analysisProgress">Analysis Progress:</label> 🟢`;
+      return response.json();
+  } catch (error) {
+      clearInterval(intervalId); // Ensure interval is cleared on error
+      console.error('sendForAnalysis(): Error analyzing audio:', error);
+
+      // Replace progress bar with a red cross emoji
+      analysisProgressContainer.innerHTML = `<label for="analysisProgress">Analysis Progress:</label> 🔴`;
+      throw error;
+  }
+}
+
+// Main function to handle audio processing
+async function processAudio(audioBlob) {
+  const fileName = generateFileName();
+
+  // try {
+  //     const s3Result = await uploadToS3(audioBlob, fileName);
+  //     console.log('Upload successful:', s3Result);
+  // } catch (uploadError) {
+  //     uploadProgress.value = 0; // Set progress to 0
+  //     uploadProgressContainer.innerHTML = `<label for="uploadProgress">Upload Progress:</label> 🔴`;
+  //     console.error('Error uploading to S3:', uploadError);
+  // }
+
+  try {
+      apiResultElement.textContent = '';
+      const apiResult = await sendForAnalysis(audioBlob, fileName);
+      console.log('API Analysis Result:', apiResult);
+      const { pesq_score, snr_db, sample_rate, quality_category } = apiResult;
+      apiResultElement.textContent = `PESQ Score: ${pesq_score}, SNR: ${snr_db} dB, Sample Rate: ${sample_rate} Hz, Quality: ${quality_category}`;
+  } catch (analysisError) {
+      analysisProgress.value = 0; // Set progress to 0
+      analysisProgress.innerHTML = 'ERROR'; // Display error message
+      console.error('Error analyzing audio:', analysisError);
+  }
+}
+
 startButton.addEventListener('click', async () => {
   // Check device permissions first
   const hasPermissions = await checkDevicePermissions();
@@ -167,13 +297,14 @@ startButton.addEventListener('click', async () => {
     }
   };
 
-  mediaRecorder.onstop = () => {
+  mediaRecorder.onstop = async () => {
     const blob = new Blob(recordedChunks, { type: 'audio/webm' });
     const url = URL.createObjectURL(blob);
     
     // Optional: You can add code here to handle the recorded audio
     // For example, create a download link or play the recording
     console.log('Recording stopped. Blob URL:', url);
+    await processAudio(blob);
   };
 
   // Start recording
@@ -292,4 +423,6 @@ function displaySentenceWithScrolling(sentence) {
           clearInterval(interval); // Stop the interval when all words are displayed
       }
   }, 2600); // Adjust the delay (in ms) for readability between batches}
+
+  //TODO raise a toast to prompt to stop recording
 }

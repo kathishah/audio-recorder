@@ -27,13 +27,30 @@
         <canvas id="waveform"></canvas>
       </div>
     </section>
+    
+    <section id="progressSection">
+      <div id="uploadProgressContainer">
+        <label for="uploadProgress">Upload:</label>
+        <progress id="uploadProgress" value="0" max="100"></progress>
+      </div>
+      <div id="analysisProgressContainer">
+        <label for="analysisProgress">Analysis:</label>
+        <progress id="analysisProgress" value="0" max="100"></progress>
+      </div>
+    </section>
+    
+    <section id="resultsSection" style="display: none;">
+      <div id="apiResult" class="api-result">
+        <!-- API analysis results will be displayed here -->
+      </div>
+  </section>
   </main>
 
   <div class="version-info">
-    Version: v1.0.20241215.1545
+    Version: v1.0.20241227.1900
   </div>
 
-  <script src="simple.js"></script>
+  <script type="module" src="simple.js"></script>
 </body>
 </html>
 
