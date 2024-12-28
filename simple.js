@@ -1,5 +1,4 @@
 import 'https://cdnjs.cloudflare.com/ajax/libs/aws-sdk/2.1484.0/aws-sdk.min.js';
-// import AWS from 'https://sdk.amazonaws.com/js/aws-sdk-2.1484.0.min.js';
 
 const startButton = document.getElementById('startButton');
 const recordingSection = document.getElementById('recordingSection');
@@ -7,7 +6,6 @@ const waveform = document.getElementById('waveform');
 const canvasContext = waveform.getContext('2d');
 const apiResultElement = document.getElementById('apiResult');
 const analysisProgressContainer = document.getElementById('analysisProgressContainer'); 
-const analysisProgress = document.getElementById('analysisProgress');
 
 const awsConfig = {
   region: 'us-west-1',
@@ -144,6 +142,27 @@ function stopRecording() {
   recordingSection.style.display = 'none';
 }
 
+function setProgress(circleId, value, isError = false) {
+  const circle = document.getElementById(circleId);
+  const radius = circle.r.baseVal.value;
+  const circumference = 2 * Math.PI * radius;
+
+  // Ensure the circle is properly initialized
+  circle.style.strokeDasharray = `${circumference}`;
+  circle.style.strokeDashoffset = `${circumference}`;
+
+  // Set the color based on the error state
+  if (isError) {
+    circle.style.stroke = 'red'; // Set to red for error
+  } else {
+    circle.style.stroke = value >= 100 ? '#4caf50' : '#2196f3'; // Green when complete, blue otherwise
+  }
+
+  // Calculate the stroke offset based on the progress value
+  const offset = circumference - (value / 100) * circumference;
+  circle.style.strokeDashoffset = offset;
+}
+
 function generateFileName() {
   const now = new Date();
   const timestamp = now.toISOString()
@@ -191,8 +210,6 @@ async function sendForAnalysis(audioBlob, fileName) {
   const formData = new FormData();
   formData.append('file', audioBlob, fileName);
 
-  analysisProgress.value = 0; // Reset progress
-
   let progress = 5; // Initial progress value
   let intervalId;
 
@@ -200,8 +217,8 @@ async function sendForAnalysis(audioBlob, fileName) {
       // Start progress updater
       intervalId = setInterval(() => {
           if (progress < 90) { // Increment progress up to 90%
-              progress += 10;
-              analysisProgress.value = progress;
+            setProgress('analysisProgressCircleFill', progress);
+            progress += 10;
           }
       }, 50);
 
@@ -211,18 +228,14 @@ async function sendForAnalysis(audioBlob, fileName) {
       });
 
       clearInterval(intervalId); // Stop updating progress
-      analysisProgress.value = 100; // Set to 100% once complete
+      progress = 100; // Set to 100% once complete
+      setProgress('analysisProgressCircleFill', progress);
 
-      // Replace progress bar with a green checkmark
-      analysisProgressContainer.innerHTML = `<label for="analysisProgress">Analysis Progress:</label> 🟢`;
       return response.json();
   } catch (error) {
       clearInterval(intervalId); // Ensure interval is cleared on error
       console.error('sendForAnalysis(): Error analyzing audio:', error);
-
-      // Replace progress bar with a red cross emoji
-      analysisProgressContainer.innerHTML = `<label for="analysisProgress">Analysis Progress:</label> 🔴`;
-      throw error;
+      setProgress('analysisProgressCircleFill', 100, true);
   }
 }
 
@@ -246,9 +259,8 @@ async function processAudio(audioBlob) {
       const { pesq_score, snr_db, sample_rate, quality_category } = apiResult;
       apiResultElement.textContent = `PESQ Score: ${pesq_score}, SNR: ${snr_db} dB, Sample Rate: ${sample_rate} Hz, Quality: ${quality_category}`;
   } catch (analysisError) {
-      analysisProgress.value = 0; // Set progress to 0
-      analysisProgress.innerHTML = 'ERROR'; // Display error message
       console.error('Error analyzing audio:', analysisError);
+      setProgress('analysisProgressCircleFill', 100, true);
   }
 }
 

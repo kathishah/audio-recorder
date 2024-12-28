@@ -203,6 +203,39 @@ progress[value]::-webkit-progress-value {
   background-color: red;
 }
 
+#progressSection {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.progress-container {
+  text-align: center;
+  width: 100px;
+}
+
+svg {
+  width: 50px; /* Limit the SVG to 100px width */
+  height: 50px; /* Limit the SVG to 100px height */
+  transform: rotate(-90deg); /* Rotate to start progress from top */
+}
+
+.background-circle {
+  fill: none;
+  stroke: #ccc; /* Background color */
+  stroke-width: 10;
+}
+
+.progress-circle {
+  fill: none;
+  stroke: #2196f3; /* Progress color */
+  stroke-width: 10;
+  stroke-dasharray: 283; /* Full circumference of the circle (2πr) */
+  stroke-dashoffset: 283; /* Initially hide progress */
+  transition: stroke-dashoffset 0.4s ease, stroke 0.4s ease;
+}
+
+
 /* Dark mode styles */
 @media (prefers-color-scheme: dark) {
   #toast.success {

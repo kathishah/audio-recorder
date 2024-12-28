@@ -29,16 +29,22 @@
     </section>
     
     <section id="progressSection">
-      <div id="uploadProgressContainer">
-        <label for="uploadProgress">Upload:</label>
-        <progress id="uploadProgress" value="0" max="100"></progress>
+      <div id="uploadProgressContainer" class="progress-container">
+        <label for="uploadProgressCircle">Upload</label>
+        <svg id="uploadProgressCircle" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="45" class="background-circle" />
+          <circle id="uploadProgressCircleFill" cx="50" cy="50" r="45" class="progress-circle" />
+        </svg>
       </div>
-      <div id="analysisProgressContainer">
-        <label for="analysisProgress">Analysis:</label>
-        <progress id="analysisProgress" value="0" max="100"></progress>
+      <div id="analysisProgressContainer" class="progress-container">
+        <label for="analysisProgressCircle">Analysis</label>
+        <svg id="analysisProgressCircle" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="45" class="background-circle" />
+          <circle id="analysisProgressCircleFill" cx="50" cy="50" r="45" class="progress-circle" />
+        </svg>
       </div>
     </section>
-    
+            
     <section id="resultsSection" style="display: none;">
       <div id="apiResult" class="api-result">
         <!-- API analysis results will be displayed here -->
