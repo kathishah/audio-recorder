@@ -135,11 +135,17 @@ startButton.addEventListener('click', async () => {
     return;
   }
 
+  // Show "Get ready..." toast
+  showToast("Get ready...", "success", 3000);
+
   // Disable button during countdown
   startButton.disabled = true;
 
   // Start countdown
   await startCountdown();
+
+  // Load a random sentence
+  loadRandomSentence(); 
 
   // Show the recording section
   recordingSection.style.display = 'block';
@@ -224,4 +230,66 @@ function drawWaveform() {
 
   canvasContext.lineTo(WIDTH, HEIGHT / 2);
   canvasContext.stroke();
+}
+
+function loadRandomSentence() {
+  // Fetch the sentences from the text file
+  fetch('sentences.txt')
+      .then(response => response.text())
+      .then(data => {
+          // Split file contents into lines and filter out empty ones
+          const lines = data.split('\n').filter(line => line.trim() !== '');
+
+          // Check if there are any valid lines
+          if (lines.length === 0) {
+              console.error('No valid sentences found in the file.');
+              return;
+          }
+
+          // Select a random line
+          const randomSentence = lines[Math.floor(Math.random() * lines.length)];
+
+          console.log(randomSentence);
+
+          // Display the sentence in the textarea with scrolling
+          displaySentenceWithScrolling(randomSentence);
+      })
+      .catch(err => {
+          console.error('Error loading the sentences:', err);
+      });
+}
+
+function displaySentenceWithScrolling(sentence) {
+  const displayArea = document.getElementById('displayArea');
+  const words = sentence.split(' ');
+  let currentIndex = 5; // Start after the first 5 words
+
+  // Clear the display area
+  displayArea.value = '';
+
+  // Preload the first 5 words
+  const firstBatch = words.slice(0, 5).join(' ');
+  displayArea.value = firstBatch;
+
+  // Auto-scroll to the top (in case of residual scroll)
+  displayArea.scrollTop = displayArea.scrollHeight;
+
+  // Function to update the text area with words gradually
+  const interval = setInterval(() => {
+      if (currentIndex < words.length) {
+          // Get the next batch of up to 5 words
+          const nextBatch = words.slice(currentIndex, currentIndex + 5).join(' ');
+          
+          // Append the batch to the display area
+          displayArea.value += ' ' + nextBatch;
+
+          // Auto-scroll to show the latest lines
+          displayArea.scrollTop = displayArea.scrollHeight;
+
+          // Move to the next batch
+          currentIndex += 5;
+      } else {
+          clearInterval(interval); // Stop the interval when all words are displayed
+      }
+  }, 2600); // Adjust the delay (in ms) for readability between batches}
 }

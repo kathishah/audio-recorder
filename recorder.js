@@ -101,7 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Function to send audio for analysis
     async function sendForAnalysis(audioBlob, fileName) {
-        const apiBaseUrl = window.location.hostname === 'localhost' ? 'http://localhost:8888' : 'https://audio-analyzer-api-af6843ebf910.herokuapp.com';
+        const apiBaseUrl = window.location.hostname === 'localhost' ? 'http://localhost:8000' : 'https://audio-analyzer-api-af6843ebf910.herokuapp.com';
         const apiUrl = `${apiBaseUrl}/api/v1/analyze`;
 
         const formData = new FormData();
