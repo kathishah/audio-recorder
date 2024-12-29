@@ -245,7 +245,7 @@ svg {
   max-width: 100%; /* or whatever maximum width you prefer */
   margin: 0 auto;
   padding: 10px;
-  font-size: 0.8rem;
+  font-size: 1.0rem;
   font-weight: 400;
   box-sizing: border-box;
   justify-content: center;
@@ -254,6 +254,40 @@ svg {
 /* Make sure the content inside doesn't overflow */
 #resultsSection > * {
   max-width: 100%;
+}
+
+.quality-score-container {
+  width: 100%;
+  max-width: 500px;
+  margin: 20px 0;
+  text-align: center;
+}
+
+.spectrum {
+  position: relative;
+  height: 20px;
+  width: 100%;
+  background: linear-gradient(to right, red, orange, yellow, green);
+  border-radius: 10px;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.marker {
+  position: absolute;
+  top: -5px;
+  height: 30px;
+  width: 5px;
+  background-color: black;
+  border-radius: 2px;
+  transition: left 0.3s ease;
+}
+
+.labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  font-weight: bold;
 }
 
 .play-button {
@@ -330,6 +364,18 @@ svg {
 
   #waveform {
     max-width: 250px;
+  }
+
+  .spectrum {
+    height: 15px;
+  }
+
+  .labels {
+    font-size: 0.9rem;
+  }
+
+  .marker {
+    height: 25px;
   }
 }
 

@@ -4,9 +4,12 @@ const startButton = document.getElementById('startButton');
 const recordingSection = document.getElementById('recordingSection');
 const waveform = document.getElementById('waveform');
 const canvasContext = waveform.getContext('2d');
-const apiResultElement = document.getElementById('apiResult');
+const resultsSection = document.getElementById('resultsSection');
 const audioPlayback = document.getElementById('audioPlayback');
 const playButton = document.getElementById('playButton');
+const spectrum = document.querySelector(".spectrum");
+const marker = document.querySelector(".marker");
+
 
 const awsConfig = {
   region: 'us-west-1',
@@ -231,7 +234,7 @@ async function uploadToS3(audioBlob, fileName) {
 }
 
 // Function to send audio for analysis
-async function sendForAnalysis(audioBlob, fileName) {
+async function analyzeThis(audioBlob, fileName) {
   const apiBaseUrl = window.location.hostname === 'localhost' ? 'http://localhost:8000' : 'https://audio-analyzer-api-af6843ebf910.herokuapp.com';
   const apiUrl = `${apiBaseUrl}/api/v1/analyze`;
 
@@ -271,7 +274,7 @@ async function sendForAnalysis(audioBlob, fileName) {
       return response.json();
   } catch (error) {
       clearInterval(intervalId); // Ensure interval is cleared on error
-      console.error('sendForAnalysis():', error);
+      console.error('analyzeThis():', error);
       showToast(error.message, 'error');
       setProgress('analysisProgressCircleFill', 100, true);
       throw error;
@@ -293,16 +296,28 @@ async function processAudio(audioBlob) {
   }
 
   try {
-      apiResultElement.textContent = '';
-      const apiResult = await sendForAnalysis(audioBlob, fileName);
+      const apiResult = await analyzeThis(audioBlob, fileName);
       console.log('API Analysis Result:', apiResult);
       const { pesq_score, snr_db, sample_rate, quality_category } = apiResult;
-      apiResultElement.textContent = `${quality_category} @ pesq: ${pesq_score}, snr: ${snr_db} dB`;
-      resultsSection.style.visibility = 'visible';
+      updateQualityScore(pesq_score);
   } catch (analysisError) {
       console.error('Error analyzing audio:', analysisError);
       setProgress('analysisProgressCircleFill', 100, true);
   }
+}
+
+function updateQualityScore(score) {
+
+  // Ensure score is within 0-4 range
+  const clampedScore = Math.max(0, Math.min(4, score));
+
+  // Calculate percentage position based on score
+  const percentage = (clampedScore / 4) * 100;
+
+  // Update marker position
+  marker.style.left = `calc(${percentage}% - 2.5px)`; // Adjust for marker width
+
+  resultsSection.style.visibility = 'visible';
 }
 
 // Event listener for play button

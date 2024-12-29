@@ -48,18 +48,28 @@
             
     <section id="resultsSection" style="visibility: hidden;">
       <div id="apiResult" class="api-result">
-        <!-- API analysis results will be displayed here -->
+        <!-- Spectrum for Quality Score -->
+        <div class="quality-score-container">
+          <div class="spectrum">
+            <span class="marker"></span>
+          </div>
+          <div class="labels">
+            <span>Poor → </span>
+            <span>Fair → </span>
+            <span>Good → </span>
+            <span>Excellent</span>
+          </div>
+        </div>
       </div>
       <button id="playButton" class="play-button" title="Play Recording">
         <i class="fas fa-play"></i>
       </button>
       <audio id="audioPlayback" controls style="display: none;"></audio>
-
-  </section>
+    </section>
   </main>
 
   <div class="version-info">
-    Version: v1.0.20241228.1434
+    Version: v1.0.20241228.2115
   </div>
 
   <script type="module" src="simple.js"></script>
