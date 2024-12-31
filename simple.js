@@ -1,5 +1,3 @@
-import 'https://cdnjs.cloudflare.com/ajax/libs/aws-sdk/2.1484.0/aws-sdk.min.js';
-
 const startButton = document.getElementById('startButton');
 const recordingSection = document.getElementById('recordingSection');
 const waveform = document.getElementById('waveform');
@@ -9,23 +7,6 @@ const audioPlayback = document.getElementById('audioPlayback');
 const playButton = document.getElementById('playButton');
 const spectrum = document.querySelector(".spectrum");
 const marker = document.querySelector(".marker");
-
-
-const awsConfig = {
-  region: 'us-west-1',
-  identityPoolId: 'us-west-1:b15a5865-d7e7-4153-9456-7d271afd31d6',
-  bucketName: 'crispvoice-audio-recordings'
-};
-
-AWS.config.update({
-  region: awsConfig.region,
-  credentials: new AWS.CognitoIdentityCredentials({
-      IdentityPoolId: awsConfig.identityPoolId
-  })
-});
-
-const s3 = new AWS.S3();
-const BUCKET_NAME = awsConfig.bucketName;
 
 let audioContext;
 let analyser;
@@ -202,35 +183,43 @@ function generateFileName() {
       .replace(/[:.]/g, '-') // Replace colons and periods with hyphens
       .replace('T', '_') // Replace T with underscore
       .replace('Z', ''); // Remove Z
-  return `recording_${timestamp}.wav`;
+  return `input_${timestamp}`;
 }
 
-// Function to upload audio to S3
-async function uploadToS3(audioBlob, fileName) {
-  const params = {
-      Bucket: BUCKET_NAME,
-      Key: fileName,
-      Body: audioBlob, // Ensure audioBlob is set as the Body
-      ContentType: 'audio/wav'
+// Function to sample audioBlob and update progress circle
+async function sampleAudio(audioBlob) {
+  const totalSize = audioBlob.size;
+  const chunkSize = 128 * 1024; // 512 KB chunks
+  let loaded = 0;
+
+  const reader = new FileReader();
+
+  reader.onload = () => {
+    loaded += chunkSize;
+    const percentCompleted = Math.min(Math.round((loaded * 100) / totalSize), 100);
+    console.log('Processing progress:', percentCompleted + '%');
+    setProgress('uploadProgressCircleFill', percentCompleted);
+
+    if (loaded < totalSize) {
+      readNextChunk();
+    } else {
+      console.log('Processing complete');
+      // showToast('Audio processing complete', 'success');
+    }
   };
 
-  return new Promise((resolve, reject) => {
-    setProgress('uploadProgressCircleFill', 0);
-    s3.upload(params, (err, data) => {
-        if (err) {
-            console.error('Upload error:', err);
-            showToast('Upload: ' + err.message, 'error');
-            reject(err);
-        } else {
-            console.log('Upload success:', data);
-            resolve(data);
-        }
-    }).on('httpUploadProgress', (progress) => {
-        const percentCompleted = Math.round((progress.loaded * 100) / progress.total);
-        console.log('Upload progress:', percentCompleted + '%');
-        setProgress('uploadProgressCircleFill', percentCompleted);
-    });
-  });
+  reader.onerror = (error) => {
+    console.error('Processing error:', error);
+    showToast('Processing error: ' + error.message, 'error');
+  };
+
+  function readNextChunk() {
+    const chunk = audioBlob.slice(loaded, loaded + chunkSize);
+    reader.readAsArrayBuffer(chunk);
+  }
+
+  // Start processing
+  readNextChunk();
 }
 
 // Function to send audio for analysis
@@ -257,6 +246,7 @@ async function analyzeThis(audioBlob, fileName) {
           }
       }, 50);
 
+      console.log(`analyzeThis(): Sending audio for analysis... ${apiUrl}`);
       const response = await fetch(apiUrl, {
           method: 'POST',
           body: formData,
@@ -265,6 +255,8 @@ async function analyzeThis(audioBlob, fileName) {
       if (!response.ok) {
         const error = await response.json();
         throw new Error('API response: ' + response.status + ' | ' + error.detail);
+      } else {
+        console.log(`analyzeThis(): API response: ${response.status}`);
       }
 
       clearInterval(intervalId); // Stop updating progress
@@ -285,14 +277,14 @@ async function analyzeThis(audioBlob, fileName) {
 async function processAudio(audioBlob) {
   const fileName = generateFileName();
 
-  if (window.location.hostname !== 'localhost') { // Only upload to S3 in production
-    try {
-        const s3Result = await uploadToS3(audioBlob, fileName);
-        console.log('Upload successful:', s3Result);
-    } catch (uploadError) {
-        setProgress('uploadProgressCircleFill', 100, true);
-        console.error('Error uploading to S3:', uploadError);
-    }
+  try {
+    // for now, just sample the audio
+    await sampleAudio(audioBlob);
+    console.log('Audio blob processing complete');
+  } catch (processingError) {
+    setProgress('uploadProgressCircleFill', 100, true);
+    console.error('Error processing audio blob:', processingError);
+    return;
   }
 
   try {
