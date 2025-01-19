@@ -18,6 +18,11 @@ let animationId;
 let isRecording = false;
 let isPlaying = false;
 let supportedMimeType = null;
+let currentSessionId = null;
+let currentDeviceInfo = {
+    microphone_details: null,
+    speaker_details: null
+};
 
 const audioMimeTypes = [
   'audio/webm',
@@ -70,45 +75,46 @@ function showToast(message, type = 'error', duration = 5000) {
 
 // Function to check device permissions
 async function checkDevicePermissions() {
-  try {
-    // Get microphone access
-    const microphoneStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    try {
+        // Get microphone access
+        const microphoneStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        
+        // Enumerate devices to get device names
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        
+        // Find microphone and speaker devices
+        const microphoneDevice = devices.find(device => 
+            device.kind === 'audioinput' && device.deviceId === microphoneStream.getAudioTracks()[0].getSettings().deviceId
+        );
+
+        const speakerDevice = devices.find(device => device.kind === 'audiooutput');
+
+        // Close the temporary stream
+        microphoneStream.getTracks().forEach(track => track.stop());
+
+        // Store device info for session creation
+        currentDeviceInfo.microphone_details = microphoneDevice ? microphoneDevice.label : 'Default Microphone';
+        currentDeviceInfo.speaker_details = speakerDevice ? speakerDevice.label : 'Default Speaker';
+
+        console.log('Current Device Info:', currentDeviceInfo);
+        // Show success toast with device names
+        showToast(`🎤:${currentDeviceInfo.microphone_details} 🔈:${currentDeviceInfo.speaker_details}`, 'success');
+
+        return true;
+    } catch (err) {
+        console.error('Device permission error:', err);
     
-    // Enumerate devices to get device names
-    const devices = await navigator.mediaDevices.enumerateDevices();
-    
-    // Find microphone and speaker devices
-    const microphoneDevice = devices.find(device => 
-      device.kind === 'audioinput' && device.deviceId === microphoneStream.getAudioTracks()[0].getSettings().deviceId
-    );
+        // Provide user-friendly error messages via toast
+        if (err.name === 'NotAllowedError') {
+          showToast('Please grant microphone and speaker permissions to use this recorder.', 'error');
+        } else if (err.message.includes('Speaker access not available')) {
+          showToast('Speaker access is required. Please check your device settings.', 'error');
+        } else {
+          showToast('Unable to access recording devices. Please check your permissions.', 'error');
+        }
 
-    const speakerDevice = devices.find(device => device.kind === 'audiooutput');
-
-    // Close the temporary stream
-    microphoneStream.getTracks().forEach(track => track.stop());
-
-    // Prepare device names for toast message
-    const microphoneName = microphoneDevice ? microphoneDevice.label : 'Default Microphone';
-    const speakerName = speakerDevice ? speakerDevice.label : 'Default Speaker';
-
-    // Show success toast with device names
-    showToast(`🎤:${microphoneName} 🔈:${speakerName}`, 'success');
-
-    return true;
-  } catch (err) {
-    console.error('Device permission error:', err);
-    
-    // Provide user-friendly error messages via toast
-    if (err.name === 'NotAllowedError') {
-      showToast('Please grant microphone and speaker permissions to use this recorder.', 'error');
-    } else if (err.message.includes('Speaker access not available')) {
-      showToast('Speaker access is required. Please check your device settings.', 'error');
-    } else {
-      showToast('Unable to access recording devices. Please check your permissions.', 'error');
+        return false;
     }
-
-    return false;
-  }
 }
 
 // Countdown function
@@ -138,52 +144,45 @@ function startCountdown() {
   });
 }
 
-// Stop recording function
-function stopRecording() {
-  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-    mediaRecorder.stop();
-  }
-  
-  // Stop waveform animation
-  if (animationId) {
-    cancelAnimationFrame(animationId);
-  }
+// Function to start a new recording session
+async function startRecordingSession() {
+    try {
+        const apiBaseUrl = window.location.hostname === 'localhost' ? 'http://localhost:8000' : 'https://audio-analyzer-api-af6843ebf910.herokuapp.com';
+        
+        // Get client IP address
+        const ipAddress = await getClientIpAddress();
+        
+        // Create request data object
+        const requestData = {
+            device_name: getBrowserFingerprint(),
+            ip_address: ipAddress,
+            audio_format: supportedMimeType || 'audio/webm',
+            microphone_details: currentDeviceInfo.microphone_details || 'Unknown Microphone',
+            speaker_details: currentDeviceInfo.speaker_details || 'Unknown Speaker'
+        };
 
-  // Reset button and recording state
-  startButton.classList.remove('recording');
-  isRecording = false;
-  recordingSection.style.display = 'none';  
-  progressSection.style.visibility  = 'visible';
-}
+        console.log('Starting recording session with data:', requestData);
 
-function setProgress(circleId, value, isError = false) {
-  const circle = document.getElementById(circleId);
-  const radius = circle.r.baseVal.value;
-  const circumference = 2 * Math.PI * radius;
-
-  // Ensure the circle is properly initialized
-  circle.style.strokeDasharray = `${circumference}`;
-  circle.style.strokeDashoffset = `${circumference}`;
-
-  // Set the color based on the error state
-  if (isError) {
-    circle.style.stroke = 'red'; // Set to red for error
-  } else {
-    circle.style.stroke = value >= 100 ? '#4caf50' : '#2196f3'; // Green when complete, blue otherwise
-  }
-
-  // Calculate the stroke offset based on the progress value
-  const offset = circumference - (value / 100) * circumference;
-  circle.style.strokeDashoffset = offset;
-}
-
-function generateFileName() {
-  const now = new Date();
-  const timestamp = now.toISOString()
-      .replace(/[:.]/g, '-') // Replace colons and periods with hyphens
-      .replace('T', '_') // Replace T with underscore
-      .replace('Z', ''); // Remove Z
-  return `input_${timestamp}`;
+        const response = await fetch(`${apiBaseUrl}/api/v1/recording-session/start`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestData)
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to start recording session');
+        }
+        
+        const responseData = await response.json();
+        currentSessionId = responseData.recording_session_id;
+        return currentSessionId;
+    } catch (error) {
+        console.error('Error starting recording session:', error);
+        showToast('Failed to start recording session', 'error');
+        throw error;
+    }
 }
 
 // Function to sample audioBlob and update progress circle
@@ -273,6 +272,51 @@ async function analyzeThis(audioBlob, fileName) {
   }
 }
 
+// Function to analyze audio with session
+async function analyzeWithSession(audioBlob, fileName) {
+    try {
+        if (!currentSessionId) {
+            throw new Error('No active recording session');
+        }
+
+        const apiBaseUrl = window.location.hostname === 'localhost' ? 'http://localhost:8000' : 'https://audio-analyzer-api-af6843ebf910.herokuapp.com';
+        const formData = new FormData();
+        formData.append('file', audioBlob, fileName);
+
+        let progress = 5;
+        setProgress('analysisProgressCircleFill', progress);
+
+        let intervalId = setInterval(() => {
+            if (progress < 90) {
+                setProgress('analysisProgressCircleFill', progress);
+                progress += 10;
+            }
+        }, 50);
+
+        console.log(`analyzeWithSession(): Sending audio for analysis with session ${currentSessionId}`);
+        const response = await fetch(`${apiBaseUrl}/api/v1/recording-session/${currentSessionId}/analyze`, {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error('API response: ' + response.status + ' | ' + error.detail);
+        }
+
+        clearInterval(intervalId);
+        progress = 100;
+        setProgress('analysisProgressCircleFill', progress);
+
+        return response.json();
+    } catch (error) {
+        console.error('analyzeWithSession():', error);
+        setProgress('analysisProgressCircleFill', 100, true);
+        showToast(error.message, 'error');
+        throw error;
+    }
+}
+
 // Main function to handle audio processing
 async function processAudio(audioBlob) {
   const fileName = generateFileName();
@@ -288,7 +332,15 @@ async function processAudio(audioBlob) {
   }
 
   try {
-      const apiResult = await analyzeThis(audioBlob, fileName);
+      let apiResult;
+      if (currentSessionId) {
+          console.log('Using session-based analysis with session ID:', currentSessionId);
+          apiResult = await analyzeWithSession(audioBlob, fileName);
+      } else {
+          console.log('Using legacy analysis without session');
+          apiResult = await analyzeThis(audioBlob, fileName);
+      }
+      
       console.log('API Analysis Result:', apiResult);
       const { pesq_score, snr_db, sample_rate, quality_category } = apiResult;
       updateQualityScore(pesq_score);
@@ -388,6 +440,9 @@ startButton.addEventListener('click', async () => {
     audioPlayback.src = audioBlobUrl;
     await processAudio(blob);
   };
+
+  // Start recording session
+  await startRecordingSession();
 
   // Start recording
   mediaRecorder.start();
@@ -502,3 +557,82 @@ function displaySentenceWithScrolling(sentence) {
   showToast("Click (🎤) to stop recording", "success");
 }
 
+function setProgress(circleId, value, isError = false) {
+  const circle = document.getElementById(circleId);
+  const radius = circle.r.baseVal.value;
+  const circumference = 2 * Math.PI * radius;
+
+  // Ensure the circle is properly initialized
+  circle.style.strokeDasharray = `${circumference}`;
+  circle.style.strokeDashoffset = `${circumference}`;
+
+  // Set the color based on the error state
+  if (isError) {
+    circle.style.stroke = 'red'; // Set to red for error
+  } else {
+    circle.style.stroke = value >= 100 ? '#4caf50' : '#2196f3'; // Green when complete, blue otherwise
+  }
+
+  // Calculate the stroke offset based on the progress value
+  const offset = circumference - (value / 100) * circumference;
+  circle.style.strokeDashoffset = offset;
+}
+
+function generateFileName() {
+  const now = new Date();
+  const timestamp = now.toISOString()
+      .replace(/[:.]/g, '-') // Replace colons and periods with hyphens
+      .replace('T', '_') // Replace T with underscore
+      .replace('Z', ''); // Remove Z
+  return `input_${timestamp}`;
+}
+
+function stopRecording() {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop();
+  }
+  
+  // Stop waveform animation
+  if (animationId) {
+    cancelAnimationFrame(animationId);
+  }
+
+  // Reset button and recording state
+  startButton.classList.remove('recording');
+  isRecording = false;
+  recordingSection.style.display = 'none';  
+  progressSection.style.visibility  = 'visible';
+}
+
+// Function to get client IP address
+async function getClientIpAddress() {
+    try {
+        const response = await fetch('https://api.ipify.org?format=json');
+        const data = await response.json();
+        return data.ip;
+    } catch (error) {
+        console.error('Error getting IP address:', error);
+        return 'unknown';
+    }
+}
+
+// Function to get browser fingerprint
+function getBrowserFingerprint() {
+    const userAgent = navigator.userAgent;
+    // Use userAgentData if available (modern browsers), otherwise fallback to userAgent parsing
+    const platform = navigator.userAgentData 
+        ? navigator.userAgentData.platform 
+        : userAgent.includes('Win') ? 'Windows' 
+            : userAgent.includes('Mac') ? 'macOS' 
+                : userAgent.includes('Linux') ? 'Linux' 
+                    : 'Unknown';
+    const language = navigator.language;
+    const screenResolution = `${window.screen.width}x${window.screen.height}`;
+    const colorDepth = window.screen.colorDepth;
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    
+    // Create a more robust fingerprint by combining these values
+    const fingerprint = `${userAgent}|${platform}|${language}|${screenResolution}|${colorDepth}|${timeZone}`;
+    console.log('Browser Fingerprint:', fingerprint);
+    return fingerprint;
+}
